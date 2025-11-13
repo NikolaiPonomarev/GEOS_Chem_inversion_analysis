@@ -401,7 +401,7 @@ for date in dates_sorted:
     n_obs.append(agg_data[date]['n_obs'])
 
 lat_bins = {'tropical': (-23.5, 23.5), 'mid': (23.5, 66.5), 'high': (66.5, 90)}
-colors = {'tropical': 'orange', 'mid': 'blue', 'high': 'purple'}
+colors = {'tropical': 'green', 'mid': 'purple', 'high': 'gold'}
 
 
 fig, axes = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
