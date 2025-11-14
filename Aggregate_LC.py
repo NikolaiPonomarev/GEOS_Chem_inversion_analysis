@@ -76,3 +76,56 @@ top3_da = xr.DataArray(
 top3_da.to_netcdf("/exports/geos.ed.ac.uk/palmer_group/nponomar/Landuse/CCI4SEN2COR/top3_lc_2x2p5.nc", encoding={
     'top3_landcover': {'zlib': True, 'complevel': 4, 'dtype': 'int16'}
 })
+
+
+
+##############Plotting
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+# Reclass map
+reclass_map = {
+    10: 6, 20: 6, 30: 6,       # cropland
+    40: 5, 100: 5, 110: 5,     # mosaic vegetation
+    50: 1, 60: 1,              # broadleaf forest
+    70: 2, 80: 2, 90: 2,       # needleleaf / mixed forest
+    120: 3,                     # shrubland
+    130: 4,                     # grassland
+    190: 7,                     # urban
+    200: 9, 220: 9, 140: 9, 150: 9, 160: 9, 170: 9, 180: 9,  # barren/snow/other -> Other
+    210: 8                      # water/ocean
+}
+outdir = '/home/nponomar/GEOS_Chem_inversion_analysis/Examples/'
+# Map top3_classes to 1-9
+top3_mapped = np.vectorize(reclass_map.get)(top3_classes)
+
+# Labels for the colorbar
+cbar_labels = {
+    1: "Broadleaf forest",
+    2: "Needleleaf/mixed forest",
+    3: "Shrubland",
+    4: "Grassland",
+    5: "Mosaic vegetation",
+    6: "Cropland",
+    7: "Urban",
+    8: "Water/ocean",
+    9: "Other"
+}
+# Discrete colormap
+cmap = plt.get_cmap("tab10", 9)
+norm = mcolors.BoundaryNorm(boundaries=np.arange(0.5, 10, 1), ncolors=9)
+
+rank_names = ["Most frequent", "Second", "Third"]
+fig, axes = plt.subplots(1, 3, figsize=(18, 6), constrained_layout=True)
+
+for i in range(3):
+    ax = axes[i]
+    im = ax.imshow(top3_mapped[i], origin='lower', cmap=cmap, norm=norm)
+    ax.set_title(rank_names[i])
+    ax.set_xlabel("X grid")
+    ax.set_ylabel("Y grid")
+
+# Colorbar with labels
+cbar = fig.colorbar(im, ax=axes.ravel().tolist(), ticks=np.arange(1, 10))
+cbar.ax.set_yticklabels([cbar_labels[i] for i in range(1, 10)])
+cbar.set_label("Land cover type")
+plt.savefig(outdir + 'LC_reprojected_regions.png')
