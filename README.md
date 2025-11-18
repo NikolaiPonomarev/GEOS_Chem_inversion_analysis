@@ -12,9 +12,9 @@ A collection of Python scripts for analyzing and post-processing results from GE
 - **`Aggregate_LC.py`**  
   Reprojects high-resolution land cover data to the model grid and generates coarse-grid summaries for use in inversion experiments.
 
-- **Plot_region_flux_annual_maps.py**  
+- **`Plot_region_flux_annual_maps.py`**  
 Computes and plots annual CO₂ flux maps for prior and posterior inversion results. Generates global maps of prior, posterior, and absolute/percent flux differences.
 
-- **Prior_posterior_XCO2_map_plots.py**  
+- **`Prior_posterior_XCO2_map_plots.py`**  
 Generates maps and annual statistics for prior vs posterior XCO₂ concentrations. Produces bar plots showing bias, RMSE, CRMSE, correlation, and Taylor diagrams to evaluate inversion performance.
  
