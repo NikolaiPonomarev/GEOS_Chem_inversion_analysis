@@ -17,4 +17,9 @@ Computes and plots annual CO₂ flux maps for prior and posterior inversion resu
 
 - **`Prior_posterior_XCO2_map_plots.py`**  
 Generates maps and annual statistics for prior vs posterior XCO₂ concentrations. Produces bar plots showing bias, RMSE, CRMSE, correlation, and Taylor diagrams to evaluate inversion performance.
- 
+
+- **`my_mapping_utils.py`**  
+  Provides functions for mapping between regions and model grid longitude/latitude.
+
+- **`State_vector_analysis.py`**  
+  Computes statistics for prior and posterior state vectors and their uncertainties from inversion experiments. Allows comparisons of DOFS and prior/post. PR, prior/post. uncertainties.
