@@ -23,3 +23,6 @@ Generates maps and annual statistics for prior vs posterior XCO₂ concentration
 
 - **`State_vector_analysis.py`**  
   Computes statistics for prior and posterior state vectors and their uncertainties from inversion experiments. Allows comparisons of DOFS and prior/post. PR, prior/post. uncertainties.
+
+- **`Cost_function.py`**  
+  Computes the value of the inversion cost function before and after data assimilation, as well as posterior chi2 values.
