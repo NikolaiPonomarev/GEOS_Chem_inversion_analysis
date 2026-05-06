@@ -8,10 +8,10 @@ import pandas as pd
 # -------------------------------
 # File paths and settings
 # -------------------------------
-inv_file = '/scratch/local/for_gc_test/enkf_oco2_inv_v14/oco_inv/inv_err_step.nc'
-region_file = '/scratch/local/for_gc_test/enkf_oco2_inv_v14/rerun_v14/surface_flux/reg_flux_477_ml.2x2.5.nc'
-out_dir = '/home/nponomar/GEOS_Chem_inversion_analysis/Examples/'
-start_year = 2018
+inv_file = '/scratch/local/enkf_oco2_inv_af/oco_inv/inv_err_step.nc'
+region_file = '/scratch/local/enkf_oco2_inv_af/rerun_v14/surface_flux/co2_emis_rnd_100.20190101.nc'
+out_dir = '/home/nponomar/GEOS_Chem_inversion_analysis/Examples/2019_AF'
+start_year = 2019
 
 # -------------------------------
 # Load inversion fluxes
@@ -113,6 +113,9 @@ vmax_flux = float(max(annual_flux0_maps.max(), annual_flux_maps.max()))
 vmax_diff = np.nanpercentile(np.abs(diff_flux.values), 99)
 vmax_perc = np.nanpercentile(np.abs(diff_percent.values), 80)
 
+lon_min, lon_max = lon_vals.min(), lon_vals.max()
+lat_min, lat_max = lat_vals.min(), lat_vals.max()
+
 # -------------------------------
 # Plotting function
 # -------------------------------
@@ -125,7 +128,11 @@ def plot_map(data, filename, title=None, cmap='RdBu_r', vmin=None, vmax=None, un
     
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.BORDERS, linestyle=':')
-    ax.set_global()
+    # ax.set_global()
+    ax.set_extent([
+        lon_vals.min(), lon_vals.max(),
+        lat_vals.min(), lat_vals.max()
+    ], crs=ccrs.PlateCarree())
     
     if title: plt.title(title, fontsize=10)
     
