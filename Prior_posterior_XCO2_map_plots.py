@@ -15,7 +15,7 @@ import cartopy.feature as cfeature
 # ----------------------
 # Load daily-binned prior/optimized/obs dataset
 # ----------------------
-ds = xr.open_dataset('/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOSChem_inversions/daily_binned_prior_optimized_obs.nc')
+ds = xr.open_dataset('/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOS_Chem_inversion_analysis_AF/GEOS_Chem_inversion_analysis/aggregated/daily_binned_prior_optimized_obs.nc')
 
 lat = ds['lat'].values
 lon = ds['lon'].values
@@ -496,11 +496,11 @@ def plot_annual_bias_maps(ds, save_dir, cmap='RdBu_r'):
         mean_post  = bias_post.mean().item()
         
         # Create figure
-        fig = plt.figure(figsize=(12,5))
+        fig = plt.figure(figsize=(8,5))
         
         # Manual axes placement for bigger maps
-        ax_prior = fig.add_axes([0.05, 0.18, 0.425, 0.75], projection=ccrs.PlateCarree())  # left map
-        ax_post  = fig.add_axes([0.525, 0.18, 0.425, 0.75], projection=ccrs.PlateCarree())  # right map
+        ax_prior = fig.add_axes([0.04, 0.20, 0.44, 0.68], projection=ccrs.PlateCarree())  # left map
+        ax_post  = fig.add_axes([0.52, 0.20, 0.44, 0.68], projection=ccrs.PlateCarree())  # right map
         
         for ax, bias, title, mean_val in zip(
             [ax_prior, ax_post],
@@ -508,21 +508,208 @@ def plot_annual_bias_maps(ds, save_dir, cmap='RdBu_r'):
             ['Prior Bias', 'Posterior Bias'],
             [mean_prior, mean_post]
         ):
-            im = ax.pcolormesh(ds['lon'], ds['lat'], bias, cmap=cmap, vmin=vmin, vmax=vmax)
+            im = ax.pcolormesh(
+                ds['lon'],
+                ds['lat'],
+                bias,
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
+                transform=ccrs.PlateCarree()
+            )
+
+            ax.set_extent([
+                float(ds['lon'].min()),
+                float(ds['lon'].max()),
+                float(ds['lat'].min()),
+                float(ds['lat'].max())
+            ], crs=ccrs.PlateCarree())
+
             ax.coastlines()
             ax.add_feature(cfeature.BORDERS, linestyle=':')
             ax.set_title(f'{title} ({y}), mean={mean_val:.2f} ppm', fontsize=14)
         
         # Shared colorbar below both maps (closer to maps)
-        cbar_ax = fig.add_axes([0.15, 0.2, 0.7, 0.03])  # [left, bottom, width, height]
+        cbar_ax = fig.add_axes([0.15, 0.08, 0.7, 0.03])  # [left, bottom, width, height]
         cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
         cbar.set_label('Bias (ppm)')
         
         plt.savefig(f'{save_dir}/Bias_maps_{y}.png', dpi=300, bbox_inches='tight')
         plt.close(fig)
 
-plot_annual_bias_maps(ds, save_dir='/home/nponomar/GEOS_Chem_inversion_analysis/Examples/')
+plot_annual_bias_maps(ds, save_dir='/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOS_Chem_inversion_analysis_AF/GEOS_Chem_inversion_analysis/Examples/')
 
+
+def plot_seasonal_counts_maps(ds_year, year, save_dir, vmin, vmax, cmap='Reds'):
+    """
+    Plot 4 seasonal maps (DJF, MAM, JJA, SON)
+    using the same color scale as annual maps.
+    """
+
+    seasons = {
+        'DJF': [12, 1, 2],
+        'MAM': [3, 4, 5],
+        'JJA': [6, 7, 8],
+        'SON': [9, 10, 11]
+    }
+
+    fig = plt.figure(figsize=(6, 7))
+
+    positions = [
+        [0.05, 0.55, 0.38, 0.30],  # DJF
+        [0.48, 0.55, 0.38, 0.30],  # MAM
+        [0.05, 0.15, 0.38, 0.30],  # JJA
+        [0.48, 0.15, 0.38, 0.30]   # SON
+    ]
+
+    for (season, months), pos in zip(seasons.items(), positions):
+        ax = fig.add_axes(pos, projection=ccrs.PlateCarree())
+
+        seasonal_counts = ds_year.sel(time=ds_year['time.month'].isin(months))['counts'].sum(dim='time')
+
+        im = ax.pcolormesh(ds_year['lon'], ds_year['lat'], seasonal_counts, cmap=cmap, vmin=vmin, vmax=vmax, transform=ccrs.PlateCarree())
+
+        ax.set_extent([
+            float(ds_year['lon'].min()),
+            float(ds_year['lon'].max()),
+            float(ds_year['lat'].min()),
+            float(ds_year['lat'].max())
+        ], crs=ccrs.PlateCarree())
+
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+        season_total = int(seasonal_counts.sum().item())
+        ax.set_title(f'{season}, total obs = {season_total}', fontsize=11)
+
+    cbar_ax = fig.add_axes([0.90, 0.20, 0.02, 0.60])
+    cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
+    cbar.set_label('Counts')
+
+    # plt.suptitle(f'Seasonal Number of Observations, {year}', fontsize=14)
+
+    plt.savefig(f'{save_dir}/Seasonal_nobs_map_{year}.png', dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+def plot_annual_counts_maps(ds, save_dir, cmap='Reds', plot_seasonal=False):
+
+    os.makedirs(save_dir, exist_ok=True)
+    years = np.unique(ds['time.year'].values)
+    # Annual total counts for all years
+    counts_annual = ds['counts'].groupby('time.year').sum('time')
+
+    # Common vmax using 90th percentile to avoid extreme outliers
+    vmax = np.nanpercentile(counts_annual.values.flatten(), 90)
+    vmin = 0
+
+    for y in years:
+        ds_year = ds.sel(time=ds['time.year'] == y)
+
+        # Annual total counts
+        counts_sum = ds_year['counts'].sum(dim='time')
+
+        # Domain mean
+        total_count = counts_sum.sum().item()
+
+        # Create figure
+        fig = plt.figure(figsize=(7, 5))
+
+        # Single large axis
+        ax = fig.add_axes([0.08, 0.18, 0.84, 0.70],projection=ccrs.PlateCarree())
+
+        im = ax.pcolormesh(ds['lon'], ds['lat'], counts_sum, cmap=cmap, vmin=vmin, vmax=vmax, transform=ccrs.PlateCarree())
+
+        ax.set_extent([
+            float(ds['lon'].min()),
+            float(ds['lon'].max()),
+            float(ds['lat'].min()),
+            float(ds['lat'].max())], crs=ccrs.PlateCarree())
+
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+        ax.set_title(f'Annual Total Number of Observations, {y}, sum={total_count:.0f}',fontsize=12)
+
+        cbar_ax = fig.add_axes([0.90, 0.20, 0.02, 0.65])
+        cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
+        cbar.set_label('Counts')
+
+        plt.savefig(f'{save_dir}/Annual_nobs_map_{y}.png',dpi=300,bbox_inches='tight')
+        plt.close(fig)
+
+        if plot_seasonal:
+            plot_seasonal_counts_maps(ds_year, y, save_dir, vmin, vmax, cmap=cmap)
+
+plot_annual_counts_maps(ds, save_dir='/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOS_Chem_inversion_analysis_AF/GEOS_Chem_inversion_analysis/Examples/', plot_seasonal=True)
+
+def plot_domain_mean_timeseries(ds, save_dir):
+    """
+    Plot domain-averaged concentration time series for:
+    - observations
+    - prior
+    - posterior
+
+    With shaded spread (std across lat/lon domain).
+
+    Dimensions expected:
+    time, lat, lon
+    """
+
+    # -----------------------------
+    # Domain mean
+    # -----------------------------
+    obs_mean = ds["obs"].mean(dim=["lat", "lon"])
+    prior_mean = ds["prior"].mean(dim=["lat", "lon"])
+    post_mean = ds["optimized"].mean(dim=["lat", "lon"])
+
+    # -----------------------------
+    # Spatial spread (std over domain)
+    # -----------------------------
+    obs_std = ds["obs"].std(dim=["lat", "lon"])
+    prior_std = ds["prior"].std(dim=["lat", "lon"])
+    post_std = ds["optimized"].std(dim=["lat", "lon"])
+
+    time = ds["time"].values
+
+    # -----------------------------
+    # Plot
+    # -----------------------------
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    obs_mean_all = float(obs_mean.mean())
+    obs_std_all = float(np.sqrt((obs_std**2).mean()).item())
+
+    prior_mean_all = float(prior_mean.mean())
+    prior_std_all = float(np.sqrt((prior_std**2).mean()).item())
+
+    post_mean_all = float(post_mean.mean())
+    post_std_all = float(np.sqrt((post_std**2).mean()).item())
+
+    # Observations
+    ax.plot(time, obs_mean, label=f"Obs: {obs_mean_all:.2f} ± {obs_std_all:.2f} ppm", linewidth=2)
+    ax.fill_between(time, obs_mean - obs_std, obs_mean + obs_std, alpha=0.12)
+
+    # Prior
+    ax.plot(time, prior_mean, label=f"Prior: {prior_mean_all:.2f} ± {prior_std_all:.2f} ppm", linewidth=2)
+    ax.fill_between(time, prior_mean - prior_std, prior_mean + prior_std, alpha=0.1)
+
+    # Posterior
+    ax.plot(time, post_mean, label=f"Posterior: {post_mean_all:.2f} ± {post_std_all:.2f} ppm", linewidth=2)
+    ax.fill_between(time, post_mean - post_std, post_mean + post_std, alpha=0.1)
+
+    ax.set_title("Domain-averaged CO$_2$ concentration time series", fontsize=14)
+    ax.set_ylabel("Concentration (ppm)")
+    ax.set_xlabel("Time")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/Domain_mean_timeseries.png",dpi=300)
+    plt.close(fig)
+
+    print("Saved: Domain_mean_timeseries.png")
+
+
+plot_domain_mean_timeseries(ds, save_dir="/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOS_Chem_inversion_analysis_AF/GEOS_Chem_inversion_analysis/Examples/")
 
 #debug Rainforest
 # Example: Broadleaf_Tropics mask
