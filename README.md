@@ -27,5 +27,5 @@ Generates maps and annual statistics for prior vs posterior XCO₂ concentration
 - **`Cost_function.py`**  
   Computes the value of the inversion cost function before and after data assimilation, as well as posterior chi2 value.
 
-- **`P_matrix_generation dir`**
+- **`/P_matrix_generation directory`**
 Scripts used to generate and analyse ensemble scaling factors for CO₂ flux inversions. The scripts include construction of the P matrix using spatially correlated perturbations and clustered scaling factors based on flux, flux gradients and the number of observations.
