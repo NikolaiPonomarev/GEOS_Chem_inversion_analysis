@@ -40,17 +40,22 @@ fig, ax = plt.subplots(figsize=(12, 7))
 
 ax.scatter(unique_steps, Jo_prior_norm_step,  alpha=0.7, s=60, c='black', zorder=2)
 ax.scatter(unique_steps, Jo_post_norm_step, alpha=0.7, s=60, c='black', zorder=2)
-ax.plot(unique_steps, Jo_prior_norm_step, linestyle='--', color='black', alpha=0.3,\
- linewidth=1, label=f'J_o prior (mean: {mean_Jo_prior_norm:.3f})',zorder=1)
-ax.plot(unique_steps, Jo_post_norm_step, color='black', alpha=0.3, linewidth=1,\
- label=f'J_o posterior (mean: {mean_Jo_post_norm:.3f})', zorder=1)
 
-ax.plot(unique_steps, Jb, color='red', linewidth=2, label=f'J_b (mean: {mean_Jb_norm:.3f})', zorder=3)
+ax.plot(unique_steps, Jo_prior_norm_step, linestyle='--', color='black', alpha=0.3,\
+ linewidth=1, label=(r'$J_o^{b}=\frac{1}{2 N_{obs}}\sum\left(\frac{y-H(x_b)}{\sigma_o}\right)^2$' f'\nmean={mean_Jo_prior_norm:.3f}'),zorder=1)
+
+ax.plot(unique_steps, Jo_post_norm_step, color='black', alpha=0.3, linewidth=1,\
+ label=(r'$J_o^{post}=\frac{1}{2 N_{obs}}\sum\left(\frac{y-H(x_a)}{\sigma_o}\right)^2$' f'\nmean={mean_Jo_post_norm:.3f}'), zorder=1)
+
+ax.plot(unique_steps, Jb, color='red', linewidth=2, \
+        label=(r'$J_b=\frac{1}{2 N_{ens}}\sum\left(\frac{x_a-x_b}{\sigma_b}\right)^2' \
+        r'=\frac{1}{2 N_{ens}}{inc_m^T inc_m}$' \
+        f'\nmean={mean_Jb_norm:.3f}'), zorder=3)
 
 ax.plot(unique_steps, J_total_prior_norm, color='royalblue', linestyle='--', linewidth=1.5,
-        label=f'J_total prior (mean: {mean_J_total_prior_norm:.3f})', zorder=3)
+        label=r'$J_{total}^{b}$' f'\nmean: {mean_J_total_prior_norm:.3f}', zorder=3)
 ax.plot(unique_steps, J_total_post_norm, color='royalblue', linestyle='-', linewidth=1.5,
-        label=f'J_total posterior (mean: {mean_J_total_post_norm:.3f})', zorder=3)
+        label=r'$J_{total}^{posterior}$' f'\nmean: {mean_J_total_post_norm:.3f}', zorder=3)
 
 # Observation count annotations
 for s, n, y in zip(unique_steps, nobs_step, J_total_post_norm):
@@ -105,5 +110,4 @@ plt.close(fig)
 #
 # Diagnostic for Jb:
 # - Inspect spatial structure of increments
-# - Optionally compute DOFS (degrees of freedom for signal):
-#   DOFS = trace(KH)
+# - Optionally compute DOFS (degrees of freedom for signal)
