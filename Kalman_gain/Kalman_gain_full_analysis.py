@@ -76,7 +76,7 @@ def process_date_kalman(d, dx, NE, n_lat, n_lon, lat_edges, lon_edges):
 
         K_vals = np.zeros(nobs)
         HPHT_vals = np.zeros(nobs)
-        Y = Y[:, :NE]
+        Y = Y[:, -NE:]
         # print('Shapes Y, dx, R:', Y.shape, dx.shape, R.shape)
         
         for i in range(nobs):
@@ -245,7 +245,12 @@ def plot_results(results, dates):
     # -------------------------
     # TIME SERIES
     # -------------------------
+
+    K_p5 = np.array([np.nanpercentile(r["K_series"], 5) for r in results])
+    K_p95 = np.array([np.nanpercentile(r["K_series"], 95) for r in results])
+
     plt.figure(figsize=(10, 5))
+    plt.fill_between(range(len(results)), K_p5, K_p95, alpha=0.25, label="5-95 percentile")
     plt.plot(time_series, marker="o", label="Mean = {:.5f}".format(np.nanmean(time_series)))
     plt.plot(time_series_median, marker="s", label="Median = {:.5f}".format(np.nanmedian(time_series_median)))
     plt.ylabel(r"Kalman Gain ($\mathrm{ppm}^{-1}$)")
