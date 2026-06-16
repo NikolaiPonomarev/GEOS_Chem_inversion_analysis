@@ -19,7 +19,7 @@ OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 # NX = 100
 # NT = 11  # Number of assimilation steps
 
-flux_variance = 0.5 # only if there are no correlations between flux regions, otherwise need to define the P matrix
+# flux_variance = 0.5 # only if there are no correlations between flux regions, otherwise need to define the P matrix
 
 def get_unique_dates_per_step(NT):
 
@@ -104,7 +104,7 @@ def compute_jb_from_inc_m(inc_m, xtm=None):
 
     if inc_m is None:
         return np.nan
-    return 0.5 * np.dot(inc_m, inc_m) / flux_variance
+    return 0.5 * np.dot(inc_m, inc_m)
 
 def compute_jo(obs, mod_prior, mod_posterior, obs_err, R_matrix=None):
     """
