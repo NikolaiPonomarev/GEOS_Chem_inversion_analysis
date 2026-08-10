@@ -115,6 +115,8 @@ def diagnose_assimilation_bias_maps(
             ax.set_ylabel('Latitude')
             ax.set_xlim(lon.min()-5, lon.max()+5)
             ax.set_ylim(lat.min()-5, lat.max()+5)
+            ax.xaxis.set_major_locator(MultipleLocator(10))  
+            ax.yaxis.set_major_locator(MultipleLocator(10))
             cbar = plt.colorbar(sc, ax=ax, shrink=0.7)
             cbar.set_label('Prior - Obs (ppm)')
 
