@@ -7,12 +7,13 @@ from multiprocessing import Pool
 # ----------------------
 # INPUTS
 # ----------------------
-grid_file = "/exports/geos.ed.ac.uk/palmer_group/run_test_2x25/OutputDir/GEOSChem.SatDiagn.20210101_0000z.nc4"
-step_files = sorted(glob.glob("/scratch/local/for_gc_test/enkf_oco2_inv_v14/oco_inv/obs_oco_assim_step.*.nc"))
-obs_mean_files = sorted(glob.glob("/scratch/local/for_gc_test/enkf_oco2_inv_v14/oco_inv/oco2_v*_obs_mean.*.nc"))
-outdir = "/scratch/local/for_gc_test/enkf_oco2_inv_v14/oco_inv/aggregated"
+grid_file = "/scratch/local/nponomar/african_inversion_full_setup/gc_05x0625_AS_47L_merra2_CO2/OutputDir_single_tracer/GEOSChem.SatDiagn.20160101_0000z.nc4"
+step_files = sorted(glob.glob("/scratch/local/nponomar/african_inversion_full_setup/gc_enkf_inversion_africa/oco_inv/obs_oco_assim_step.*.nc"))
+obs_mean_files = sorted(glob.glob("/scratch/local/nponomar/african_inversion_full_setup/gc_enkf_inversion_africa/oco_inv/oco2_v*_obs_mean.*.nc"))
+outdir = "/exports/geos.ed.ac.uk/palmer_group/nponomar/GEOS_Chem_inversion_analysis_AF/GEOS_Chem_inversion_analysis/aggregated"
 os.makedirs(outdir, exist_ok=True)
-
+#mapping between dates and step numbers
+ens_pos_file = ("/scratch/local/nponomar/african_inversion_full_setup/gc_05x0625_AS_47L_merra2_CO2/enkf_output/ens_pos.dat") 
 # ----------------------
 # LOAD MODEL GRID
 # ----------------------
@@ -28,6 +29,33 @@ lon_edges = np.concatenate(([lon_grid[0] - dlon/2], (lon_grid[:-1] + lon_grid[1:
 
 n_lat = len(lat_grid)
 n_lon = len(lon_grid)
+
+def read_assimilation_steps(fname):
+    steps = []
+    with open(fname, "r") as f:
+        for line in f:
+            line = line.strip()
+
+            if not line or not line[0].isdigit():
+                continue
+
+            parts = line.split(",")
+
+            step = int(parts[0])
+            doy_st = int(parts[5])
+
+            # Only keep first occurrence of each step
+            if not any(s["step"] == step for s in steps):
+                steps.append({
+                    "step": step,
+                    "doy_st": doy_st
+                })
+    return steps
+
+def get_step_for_date(date, assim_steps):
+    doy = date.dayofyear
+    matching = [ s for s in assim_steps if s["doy_st"] <= doy]
+    return matching[-1]["step"]
 
 # ----------------------
 # FUNCTION TO PROCESS ONE DAY
@@ -168,7 +196,13 @@ with Pool(processes=4) as pool:
 # extract the dates (already most frequent per file)
 # dates = [pd.to_datetime(get_date_from_filename(f), format='%Y%m%d') for f, _ in args_list]
 dates = [pd.to_datetime(get_date_from_filename(f), format='%Y%m%d') for f in step_files]
+assim_steps = read_assimilation_steps(ens_pos_file)
+assim_steps_daily = np.array([get_step_for_date(date, assim_steps) for date in dates])
 n_days = len(dates)
+
+# print("Daily assimilation steps:")
+# for date, step in zip(dates, assim_steps_daily):
+#     print(date.date(), int(step))
 
 obs_daily = np.zeros((n_days, n_lat, n_lon))
 prior_daily = np.zeros((n_days, n_lat, n_lon))
@@ -208,13 +242,14 @@ optimized_daily[count_daily == 0] = np.nan
 # ----------------------
 # SAVE TO NETCDF
 # ----------------------
-out_nc = os.path.join(outdir, "daily_binned_prior_optimized_obs.nc")
+out_nc = os.path.join(outdir, "daily_binned_prior_optimized_obs_2016_steps.nc")
 ds_out = xr.Dataset(
     {
         "obs": (("time", "lat", "lon"), obs_daily),
         "prior": (("time", "lat", "lon"), prior_daily),
         "optimized": (("time", "lat", "lon"), optimized_daily),
-        "counts": (("time", "lat", "lon"), count_daily)
+        "counts": (("time", "lat", "lon"), count_daily),
+        "step": (("time",), assim_steps_daily)
     },
     coords={
         "time": dates,
